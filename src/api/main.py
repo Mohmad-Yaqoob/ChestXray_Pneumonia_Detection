@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 import tensorflow as tf
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from starlette.responses import Response
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # ── Prometheus metrics ────────────────────────────────────────────────────────
 REQUEST_COUNT = Counter(
     "xray_requests_total",
-    "Total number of prediction requests",
+    "Total prediction requests",
     ["endpoint", "status"]
 )
 REQUEST_LATENCY = Histogram(
@@ -26,9 +26,9 @@ REQUEST_LATENCY = Histogram(
     "Request latency in seconds",
     ["endpoint"]
 )
-PREDICTION_DIST = Counter(
-    "xray_prediction_distribution",
-    "Distribution of predictions",
+PREDICTION_COUNTER = Counter(
+    "xray_predictions_total",
+    "Total predictions by class",
     ["prediction"]
 )
 
@@ -52,56 +52,59 @@ model = None
 
 def load_model():
     global model
+    if model is not None:
+        return model
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(f"Model not found at {MODEL_PATH}")
     logger.info(f"Loading model from {MODEL_PATH}")
     model = tf.keras.models.load_model(MODEL_PATH)
     logger.info("Model loaded successfully")
+    return model
 
 @app.on_event("startup")
 async def startup_event():
     load_model()
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
-class PredictionResponse(BaseModel):
-    prediction: str
-    confidence: float
-    pneumonia_probability: float
-    normal_probability: float
-    model_version: str = "mobilenetv2_v1"
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 IMG_SIZE = (224, 224)
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    """Convert raw bytes to model-ready numpy array."""
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = img.resize(IMG_SIZE)
     arr = np.array(img, dtype=np.float32) / 255.0
-    return np.expand_dims(arr, axis=0)   # (1, 224, 224, 3)
+    return np.expand_dims(arr, axis=0)
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 @app.get("/")
 def root():
     return {
         "message": "Chest X-Ray Pneumonia Detection API",
-        "status": "running",
-        "docs": "/docs",
+        "status":  "running",
+        "docs":    "/docs",
     }
 
 @app.get("/health")
 def health():
     return {
-        "status": "healthy",
+        "status":       "healthy" if model is not None else "model not loaded",
         "model_loaded": model is not None,
-        "model_path": MODEL_PATH,
+        "model_path":   MODEL_PATH,
     }
 
-@app.post("/predict", response_model=PredictionResponse)
+@app.get("/model/info")
+def model_info():
+    m = load_model()
+    return {
+        "model_path":   MODEL_PATH,
+        "input_shape":  str(m.input_shape),
+        "output_shape": str(m.output_shape),
+        "total_params": m.count_params(),
+    }
+
+@app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     start = time.time()
 
-    # Validate file type
     if file.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
         REQUEST_COUNT.labels(endpoint="/predict", status="error").inc()
         raise HTTPException(
@@ -113,42 +116,37 @@ async def predict(file: UploadFile = File(...)):
         image_bytes = await file.read()
         img_array   = preprocess_image(image_bytes)
 
-        # Run inference
-        prob = float(model.predict(img_array, verbose=0)[0][0])
+        m        = load_model()
+        raw_pred = float(m.predict(img_array, verbose=0)[0][0])
 
-        # Class index 1 = PNEUMONIA (ImageDataGenerator sorts alphabetically)
-        # NORMAL=0, PNEUMONIA=1
-        pneumonia_prob = prob
-        normal_prob    = 1.0 - prob
-        prediction     = "PNEUMONIA" if prob >= 0.5 else "NORMAL"
-        confidence     = pneumonia_prob if prediction == "PNEUMONIA" else normal_prob
+        label      = "PNEUMONIA" if raw_pred >= 0.5 else "NORMAL"
+        confidence = raw_pred if raw_pred >= 0.5 else 1 - raw_pred
+        latency    = time.time() - start
 
-        # Record metrics
-        latency = time.time() - start
         REQUEST_COUNT.labels(endpoint="/predict", status="success").inc()
         REQUEST_LATENCY.labels(endpoint="/predict").observe(latency)
-        PREDICTION_DIST.labels(prediction=prediction).inc()
+        PREDICTION_COUNTER.labels(prediction=label).inc()
 
-        logger.info(
-            f"Prediction: {prediction} | "
-            f"Confidence: {confidence:.4f} | "
-            f"Latency: {latency:.3f}s"
-        )
+        logger.info(f"Prediction: {label} ({confidence:.4f}) in {latency:.3f}s")
 
-        return PredictionResponse(
-            prediction=prediction,
-            confidence=round(confidence, 4),
-            pneumonia_probability=round(pneumonia_prob, 4),
-            normal_probability=round(normal_prob, 4),
-        )
+        return JSONResponse({
+            "filename":        file.filename,
+            "prediction":      label,
+            "confidence":      round(confidence * 100, 2),
+            "raw_score":       round(raw_pred, 6),
+            "latency_seconds": round(latency, 4),
+            "interpretation": (
+                "Pneumonia detected. Please consult a doctor."
+                if label == "PNEUMONIA"
+                else "No pneumonia detected. Chest X-ray appears normal."
+            )
+        })
 
     except Exception as e:
         REQUEST_COUNT.labels(endpoint="/predict", status="error").inc()
         logger.error(f"Prediction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.get("/metrics")
 def metrics():
-    """Prometheus metrics endpoint."""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
