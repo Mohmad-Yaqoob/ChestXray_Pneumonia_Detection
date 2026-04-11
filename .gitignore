@@ -28,14 +28,12 @@ ENV/
 *.ipynb_checkpoints
 
 # ── ML — models & large artifacts ───────────────────────
-*.h5
 *.hdf5
 *.pkl
 *.pt
 *.pth
 *.onnx
 *.tflite
-models/
 saved_model/
 
 # ── Data (tracked by DVC, not Git) ──────────────────────

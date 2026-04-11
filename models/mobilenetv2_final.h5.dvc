@@ -1,0 +1,6 @@
+outs:
+- md5: eb49903db77510c71dcd30d2a8cdb3ce
+  size: 26007728
+  isexec: true
+  hash: md5
+  path: mobilenetv2_final.h5
