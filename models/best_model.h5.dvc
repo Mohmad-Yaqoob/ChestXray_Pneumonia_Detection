@@ -1,0 +1,6 @@
+outs:
+- md5: c7efefdbdc7eb771f515cefb96b565ec
+  size: 26007728
+  isexec: true
+  hash: md5
+  path: best_model.h5
