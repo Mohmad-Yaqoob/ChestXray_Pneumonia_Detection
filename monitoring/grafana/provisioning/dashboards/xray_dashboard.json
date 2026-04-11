@@ -1,0 +1,136 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [
+            { "color": "green", "value": null },
+            { "color": "red",   "value": 80 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "title": "Total Predictions",
+      "type": "stat",
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "sum(xray_requests_total{status='success'})",
+        "legendFormat": "Total"
+      }]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.5 },
+            { "color": "red",    "value": 1 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "title": "Avg Latency (s)",
+      "type": "stat",
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "rate(xray_request_latency_seconds_sum[5m]) / rate(xray_request_latency_seconds_count[5m])",
+        "legendFormat": "Latency"
+      }]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [
+            { "color": "green", "value": null },
+            { "color": "red",   "value": 1 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "title": "Pneumonia Detections",
+      "type": "stat",
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "xray_predictions_total{prediction='PNEUMONIA'}",
+        "legendFormat": "Pneumonia"
+      }]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [
+            { "color": "green", "value": null }
+          ]}
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "title": "Normal Results",
+      "type": "stat",
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "xray_predictions_total{prediction='NORMAL'}",
+        "legendFormat": "Normal"
+      }]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 2 } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "title": "Request Rate (per minute)",
+      "type": "timeseries",
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "rate(xray_requests_total[1m]) * 60",
+        "legendFormat": "{{status}}"
+      }]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 2 } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "title": "Prediction Latency over Time",
+      "type": "timeseries",
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "rate(xray_request_latency_seconds_sum[5m]) / rate(xray_request_latency_seconds_count[5m])",
+        "legendFormat": "Avg Latency"
+      }]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "tags": ["xray", "mlops"],
+  "title": "Chest X-Ray Prediction Dashboard",
+  "uid": "xray-dashboard",
+  "version": 1
+}
