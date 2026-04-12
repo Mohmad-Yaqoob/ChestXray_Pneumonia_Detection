@@ -3,6 +3,7 @@ import requests
 import io
 from PIL import Image
 import time
+import os
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -13,7 +14,8 @@ st.set_page_config(
 )
 
 # ── Config ────────────────────────────────────────────────────────────────────
-API_URL = "http://localhost:8000"
+# API_URL = "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -69,12 +71,14 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
     # Show image
-    col_img, col_result = st.columns(2)
+    # col_img, col_result = st.columns(2)
+    col_img, col_result = st.columns([1.2, 1], gap="large")
 
     with col_img:
         st.subheader("Uploaded Image")
         image = Image.open(uploaded_file)
-        st.image(image, use_container_width=True, caption=uploaded_file.name)
+        # st.image(image, use_container_width=True, caption=uploaded_file.name)
+        st.image(image, use_column_width="always", caption=uploaded_file.name)
         st.caption(f"Size: {image.size[0]}x{image.size[1]} px")
 
     with col_result:

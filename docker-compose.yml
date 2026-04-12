@@ -1,0 +1,113 @@
+
+networks:
+  xray-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  mlflow_data:
+
+services:
+
+  # ── FastAPI inference engine ───────────────────────────
+  fastapi:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.fastapi
+    container_name: xray-fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=models/mobilenetv2_final.h5
+    volumes:
+      - ./models:/app/models
+    networks:
+      - xray-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ── Streamlit frontend ─────────────────────────────────
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.streamlit
+    container_name: xray-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://fastapi:8000
+    depends_on:
+      - fastapi
+    networks:
+      - xray-network
+    restart: unless-stopped
+
+  # ── MLflow tracking server ─────────────────────────────
+  mlflow:
+      image: ghcr.io/mlflow/mlflow:v2.11.1
+      container_name: xray-mlflow
+      ports:
+        - "5000:5000"
+      volumes:
+        - mlflow_data:/mlflow
+      networks:
+        - xray-network
+      command: >
+        mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri /mlflow
+        --default-artifact-root /mlflow/artifacts
+      restart: unless-stopped
+
+  # ── Prometheus ─────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: xray-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    networks:
+      - xray-network
+    restart: unless-stopped
+
+  # ── Grafana ────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: xray-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - xray-network
+    restart: unless-stopped
+
+  # ── Node exporter (system metrics) ────────────────────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: xray-node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - xray-network
+    restart: unless-stopped
