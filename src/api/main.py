@@ -119,8 +119,9 @@ async def predict(file: UploadFile = File(...)):
         m        = load_model()
         raw_pred = float(m.predict(img_array, verbose=0)[0][0])
 
-        label      = "PNEUMONIA" if raw_pred >= 0.5 else "NORMAL"
-        confidence = raw_pred if raw_pred >= 0.5 else 1 - raw_pred
+        THRESHOLD = 0.65
+        label = "PNEUMONIA" if raw_pred >= THRESHOLD else "NORMAL"
+        confidence = raw_pred if raw_pred >= THRESHOLD else 1 - raw_pred
         latency    = time.time() - start
 
         REQUEST_COUNT.labels(endpoint="/predict", status="success").inc()

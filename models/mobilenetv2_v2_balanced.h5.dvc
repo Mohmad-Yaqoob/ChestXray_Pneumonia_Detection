@@ -1,0 +1,6 @@
+outs:
+- md5: badc6db9ecded996ab79941546a9589a
+  size: 26007728
+  isexec: true
+  hash: md5
+  path: mobilenetv2_v2_balanced.h5
