@@ -1,92 +1,58 @@
-# ── Python ──────────────────────────────────────────────
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-*.egg
 *.egg-info/
 dist/
 build/
-.eggs/
-.Python
-pip-wheel-metadata/
 
-# ── Virtual environments ─────────────────────────────────
+# Virtual environment
 venv/
-env/
-.env/
 .venv/
-ENV/
 
-# ── Environment variables (secrets!) ────────────────────
+# Environment variables
 .env
 .env.*
 !.env.example
 
-# ── Jupyter Notebooks ────────────────────────────────────
+# Jupyter
 .ipynb_checkpoints/
-*.ipynb_checkpoints
 
-# ── ML — models & large artifacts ───────────────────────
+# ML models (tracked by DVC)
+*.h5
 *.hdf5
 *.pkl
 *.pt
-*.pth
 *.onnx
-*.tflite
-saved_model/
 
-# ── Data (tracked by DVC, not Git) ──────────────────────
+# Data (tracked by DVC)
 data/raw/
 data/processed/
-data/versioned/
-*.csv
 *.zip
 *.tar.gz
-*.tar
-*.gz
 
-# ── DVC internal (keep .dvc files, ignore cache) ─────────
+# DVC cache
 .dvc/cache/
 .dvc/tmp/
 
-# ── MLflow ───────────────────────────────────────────────
+# MLflow
 mlruns/
-mlflow.db
 mlartifacts/
 
-# ── Airflow ──────────────────────────────────────────────
+# Airflow
 airflow/logs/
-airflow/plugins/__pycache__/
-airflow.cfg
 airflow.db
 airflow-webserver.pid
 standalone_admin_password.txt
 
-# ── Docker ───────────────────────────────────────────────
-.dockerignore
-
-# ── Monitoring ───────────────────────────────────────────
+# Monitoring data
 monitoring/grafana/data/
 monitoring/prometheus/data/
 
-# ── IDEs & editors ───────────────────────────────────────
+# IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 .DS_Store
-Thumbs.db
 
-# ── Logs & temp files ────────────────────────────────────
+# Logs
 *.log
-*.tmp
-*.temp
 logs/
-tmp/
-
-# ── Testing ──────────────────────────────────────────────
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
