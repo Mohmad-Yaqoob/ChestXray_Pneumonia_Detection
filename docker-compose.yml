@@ -19,7 +19,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MODEL_PATH=models/mobilenetv2_final.h5
+      - MODEL_PATH=models/mobilenetv2_v3_final.h5
     volumes:
       - ./models:/app/models
     networks:
