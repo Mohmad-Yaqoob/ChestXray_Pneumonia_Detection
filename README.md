@@ -3,7 +3,7 @@
 > An end-to-end MLOps project that detects pneumonia from chest X-rays using a fine-tuned MobileNetV2 CNN — fully containerized and production-ready.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-2.17-orange)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.19-orange)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
 ![MLflow](https://img.shields.io/badge/MLflow-2.11-red)
@@ -45,7 +45,7 @@ In resource-limited settings such as rural hospitals and clinics in developing c
 | Domain | Medical Imaging, Healthcare AI |
 | Task | Binary Classification (Normal vs Pneumonia) |
 | Dataset | [Kaggle Chest X-Ray Dataset](https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia) |
-| Model | Fine-tuned MobileNetV2 |
+| Model | Fine-tuned MobileNetV2 (v3 — proper 80/10/10 split) |
 | Training Platform | Kaggle (GPU P100) |
 | Deployment | Docker Compose (local) |
 
@@ -86,12 +86,12 @@ In resource-limited settings such as rural hospitals and clinics in developing c
 
 | Category | Technology | Purpose |
 |---|---|---|
-| Model | MobileNetV2 + TensorFlow | CNN for X-ray classification |
+| Model | MobileNetV2 + TensorFlow 2.19 | CNN for X-ray classification |
 | Data Pipeline | Apache Airflow | Automated data ingestion |
-| Data Versioning | DVC | Track datasets and models |
-| Experiment Tracking | MLflow | Log metrics, params, artifacts |
+| Data Versioning | DVC 3.67 | Track datasets and models |
+| Experiment Tracking | MLflow 2.11 | Log metrics, params, artifacts |
 | Inference API | FastAPI + Uvicorn | REST API for predictions |
-| Frontend | Streamlit | Web UI for doctors/users |
+| Frontend | Streamlit | Professional web UI |
 | Monitoring | Prometheus + Grafana | Real-time metrics dashboard |
 | Containerization | Docker + Docker Compose | Full stack deployment |
 | Version Control | Git + GitHub | Code versioning |
@@ -110,17 +110,23 @@ ChestXray_Pneumonia_Detection/
 │   ├── raw/                        # Downloaded from Kaggle (DVC)
 │   └── processed/                  # Train/val/test splits (DVC)
 │       ├── train/
-│       │   ├── NORMAL/             # ~1341 images
-│       │   └── PNEUMONIA/          # ~3875 images
+│       │   ├── NORMAL/             # 1266 images
+│       │   └── PNEUMONIA/          # 3418 images
 │       ├── val/
+│       │   ├── NORMAL/             # 158 images
+│       │   └── PNEUMONIA/          # 427 images
 │       └── test/
+│           ├── NORMAL/             # 159 images
+│           └── PNEUMONIA/          # 428 images
 ├── docker/
 │   ├── Dockerfile.fastapi
 │   ├── Dockerfile.streamlit
 │   └── requirements.docker.txt
 ├── models/
-│   ├── mobilenetv2_final.h5        # Final trained model (DVC)
-│   └── best_model.h5               # Best checkpoint (DVC)
+│   ├── mobilenetv2_v3_final.h5     # Production model (DVC)
+│   ├── best_model_v3.h5            # Best checkpoint (DVC)
+│   ├── mobilenetv2_final.h5        # v1 original (DVC)
+│   └── mobilenetv2_v2_balanced.h5  # v2 attempt (DVC)
 ├── monitoring/
 │   ├── prometheus/
 │   │   └── prometheus.yml
@@ -137,9 +143,8 @@ ChestXray_Pneumonia_Detection/
 │   │   └── streamlit_app.py        # Streamlit frontend
 │   └── model/
 │       └── train.py                # Training script
-├── tests/
-│   └── test_api.py
 ├── docker-compose.yml
+├── AI_Disclosure.md
 ├── requirements.txt
 └── README.md
 ```
@@ -148,28 +153,57 @@ ChestXray_Pneumonia_Detection/
 
 ## Model Performance
 
-The model was trained on the Kaggle Chest X-Ray dataset using two-phase transfer learning:
+Three model versions were trained and tracked via MLflow. The final production model is **v3**.
+
+### Model Evolution
+
+| Version | NORMAL Accuracy | PNEUMONIA Accuracy | Val AUC | Outcome |
+|---|---|---|---|---|
+| v1 — original split | 56% | 99.7% | 93.6% | Biased, not acceptable |
+| v2 — class weights only | 48% | 99.4% | 92.1% | Made things worse |
+| **v3 — proper 80/10/10 split** | **77.4%** | **98.8%** | **99.3%** | **Production ready** |
+
+### Why v1 and v2 Failed
+
+The original Kaggle dataset ships with only **8 validation images per class** — far too small to guide training. The model learned to favour PNEUMONIA (the majority class) regardless of the input.
+
+Class weights alone (v2) didn't fix this because the root cause was the broken validation set, not the imbalance ratio.
+
+### The Fix (v3)
+
+- Pooled all 5,856 images across the original train/val/test splits
+- Resplit 80/10/10 using stratified sampling → **158 NORMAL + 427 PNEUMONIA in validation**
+- Applied sklearn class weights during training
+- Two-phase fine-tuning with EarlyStopping on val_auc
+
+### Final Model Metrics (v3)
 
 | Metric | Score |
 |---|---|
-| Test AUC | **93.6%** |
-| Test Recall | **99.2%** |
-| Test Accuracy | 79.2% |
-| Test Precision | 73.4% |
-
-> **Why Recall matters most:** In medical diagnosis, missing a pneumonia case (false negative) is far more dangerous than a false alarm. A 99.2% recall means the model catches virtually every pneumonia case.
+| Val AUC (Phase 1) | **99.30%** |
+| Test AUC | **97.62%** |
+| Test Accuracy | 93.02% |
+| Test Precision | 92.16% |
+| Test Recall | 98.83% |
+| NORMAL class accuracy | 77.4% |
+| PNEUMONIA class accuracy | 98.8% |
+| Avg inference latency | ~145ms |
 
 ### Training Strategy
 
-**Phase 1 — Frozen base (10 epochs)**
-- MobileNetV2 base frozen (ImageNet weights preserved)
+**Phase 1 — Frozen base (15 epochs)**
+- MobileNetV2 base frozen, ImageNet weights preserved
 - Only custom head trained
 - Learning rate: 1e-4
 
 **Phase 2 — Fine-tuning (10 epochs)**
-- Top 30 layers of base unfrozen
-- Lower learning rate: 1e-5
-- EarlyStopping + ReduceLROnPlateau callbacks
+- Last 30 layers of base unfrozen
+- Learning rate: 1e-5
+- EarlyStopping + ReduceLROnPlateau on val_auc
+
+### Decision Threshold
+
+The prediction threshold is set to **0.65** (not the default 0.5). The model only predicts PNEUMONIA when the sigmoid output exceeds 0.65, reducing false positives on the NORMAL class.
 
 ---
 
@@ -249,30 +283,33 @@ Automated 5-task DAG:
 download_dataset → unzip_dataset → validate_dataset → preprocess_dataset → dvc_add_data
 ```
 - Downloads chest X-ray dataset from Kaggle API
-- Validates all 6 expected folders exist
+- Validates all expected folders exist
 - Copies images to clean `processed/` structure
 - Tracks output with DVC
 
 ### Phase 3 — Model Training (Kaggle GPU)
 - MobileNetV2 with ImageNet weights
-- Custom head: GlobalAveragePooling → BatchNorm → Dense(256) → Dropout → Dense(64) → Sigmoid
+- Custom head: GlobalAveragePooling → BatchNorm → Dense(256) → Dropout(0.4) → Dense(64) → Sigmoid
 - Data augmentation: rotation, zoom, horizontal flip, shift
-- MLflow tracking: all hyperparameters, per-epoch metrics, model artifacts
-- Trained on Kaggle P100 GPU (~20 minutes)
+- MLflow tracking: all hyperparameters, per-epoch metrics
+- Trained on Kaggle P100 GPU (~15 minutes)
+- Three versions trained: v1, v2, v3 — all logged to MLflow
 
 ### Phase 4 — FastAPI Inference Engine
 - `POST /predict` — upload X-ray, get prediction + confidence
 - `GET /health` — model status check
 - `GET /metrics` — Prometheus-format metrics
 - `GET /model/info` — model metadata
-- Prometheus counters for request count, latency, prediction distribution
+- Custom Prometheus counters for request count, latency, prediction distribution
 
 ### Phase 5 — Streamlit Frontend
-- Single image upload with instant prediction
-- Confidence score with visual progress bar
-- Batch testing for multiple images
-- API health indicator in header
-- Model info in sidebar
+- Professional dark-blue dashboard UI
+- Single image upload with circular confidence gauge
+- Plain-English result explanation (no technical jargon)
+- Batch testing for multiple images at once
+- Prediction history log with timestamps and latency
+- Collapsible technical details panel
+- API health indicator in sidebar
 
 ### Phase 6 — Prometheus + Grafana Monitoring
 Metrics tracked:
@@ -312,11 +349,11 @@ curl -X POST http://localhost:8000/predict \
 ```json
 {
   "filename": "chest_xray.jpg",
-  "prediction": "PNEUMONIA",
-  "confidence": 99.78,
-  "raw_score": 0.997781,
-  "latency_seconds": 1.524,
-  "interpretation": "Pneumonia detected. Please consult a doctor."
+  "prediction": "NORMAL",
+  "confidence": 96.81,
+  "raw_score": 0.031886,
+  "latency_seconds": 0.1445,
+  "interpretation": "No pneumonia detected. Chest X-ray appears normal."
 }
 ```
 
@@ -326,7 +363,7 @@ curl -X POST http://localhost:8000/predict \
 {
   "status": "healthy",
   "model_loaded": true,
-  "model_path": "models/mobilenetv2_final.h5"
+  "model_path": "models/mobilenetv2_v3_final.h5"
 }
 ```
 
@@ -336,13 +373,14 @@ curl -X POST http://localhost:8000/predict \
 
 | Practice | Implementation |
 |---|---|
-| Data Versioning | DVC tracks datasets and model files |
-| Experiment Tracking | MLflow logs every training run |
+| Data Versioning | DVC tracks datasets and all model versions |
+| Experiment Tracking | MLflow logs all 3 training runs with full metrics |
 | Reproducibility | Docker ensures identical environments |
-| Automated Pipeline | Airflow DAG for data ingestion |
+| Automated Pipeline | Airflow DAG for data ingestion and preprocessing |
 | Monitoring | Prometheus + Grafana for production metrics |
 | API-first | FastAPI serves model as REST endpoint |
 | Health Checks | Docker healthcheck on FastAPI container |
+| Iterative Development | v1 → v2 → v3 with documented improvements |
 | Separation of concerns | Data / Training / Serving / Monitoring in separate layers |
 
 ---
@@ -351,9 +389,16 @@ curl -X POST http://localhost:8000/predict \
 
 **Chest X-Ray Images (Pneumonia)** — Paul Mooney, Kaggle
 
+Original split (not used for training):
 - Training: 5,216 images (1,341 Normal, 3,875 Pneumonia)
-- Validation: 16 images (8 Normal, 8 Pneumonia)
+- Validation: 16 images (8 Normal, 8 Pneumonia) — too small!
 - Test: 624 images (234 Normal, 390 Pneumonia)
+
+Resplit for v3 training (80/10/10 proper split):
+- Total: 1,583 Normal + 4,273 Pneumonia = 5,856 images
+- Train: 1,266 Normal + 3,418 Pneumonia
+- Val: 158 Normal + 427 Pneumonia
+- Test: 159 Normal + 428 Pneumonia
 
 Dataset link: https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia
 
@@ -373,5 +418,3 @@ Dataset link: https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneum
 - Framework: TensorFlow / Keras, FastAPI, Streamlit, Apache Airflow
 
 ---
-
-*Built with passion as part of IIT Madras M.Tech MLOps coursework — Bismillah to Alhamdulillah 🤲*
