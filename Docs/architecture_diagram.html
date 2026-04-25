@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PneumoScan AI — Architecture Diagram</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f8f9fa;
+    padding: 40px;
+    color: #1a1a2e;
+  }
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1a1a2e;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 36px;
+  }
+  .diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .layer {
+    width: 100%;
+    border-radius: 12px;
+    padding: 18px 24px;
+    margin-bottom: 0;
+    position: relative;
+  }
+  .layer-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    opacity: 0.7;
+  }
+  .boxes {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .box {
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 140px;
+    flex: 1;
+    max-width: 200px;
+  }
+  .box-sub {
+    font-size: 10px;
+    font-weight: 400;
+    margin-top: 4px;
+    opacity: 0.75;
+  }
+  .arrow {
+    width: 2px;
+    height: 36px;
+    background: #ccc;
+    position: relative;
+    margin: 0 auto;
+  }
+  .arrow::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 10px solid #ccc;
+  }
+
+  /* Layer colors */
+  .l-data    { background: #EFF6FF; border: 2px solid #BFDBFE; }
+  .l-data .layer-title { color: #1D4ED8; }
+  .l-data .box { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
+
+  .l-train   { background: #F0FDF4; border: 2px solid #BBF7D0; }
+  .l-train .layer-title { color: #15803D; }
+  .l-train .box { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
+
+  .l-serve   { background: #FFF7ED; border: 2px solid #FED7AA; }
+  .l-serve .layer-title { color: #C2410C; }
+  .l-serve .box { background: #FFEDD5; color: #9A3412; border: 1px solid #FDBA74; }
+
+  .l-monitor { background: #FDF4FF; border: 2px solid #E9D5FF; }
+  .l-monitor .layer-title { color: #7E22CE; }
+  .l-monitor .box { background: #F3E8FF; color: #6B21A8; border: 1px solid #C4B5FD; }
+
+  .l-infra   { background: #F1F5F9; border: 2px solid #CBD5E1; }
+  .l-infra .layer-title { color: #334155; }
+  .l-infra .box { background: #E2E8F0; color: #1E293B; border: 1px solid #94A3B8; }
+
+  .legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #555;
+  }
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+  }
+  .footer {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 11px;
+    color: #999;
+  }
+</style>
+</head>
+<body>
+
+<h1>🫁 PneumoScan AI — System Architecture</h1>
+<p class="subtitle">Chest X-Ray Pneumonia Detection | DA5402 MLOps | IIT Madras | Mohmad Yaqoob (DA25M017)</p>
+
+<div class="diagram">
+
+  <!-- DATA LAYER -->
+  <div class="layer l-data">
+    <div class="layer-title">Data Layer</div>
+    <div class="boxes">
+      <div class="box">
+        Kaggle Dataset
+        <div class="box-sub">5,856 chest X-rays</div>
+      </div>
+      <div class="box">
+        Airflow DAG
+        <div class="box-sub">5-task pipeline</div>
+      </div>
+      <div class="box">
+        DVC Versioning
+        <div class="box-sub">Data + model tracking</div>
+      </div>
+      <div class="box">
+        Git + Git LFS
+        <div class="box-sub">Source control</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- TRAINING LAYER -->
+  <div class="layer l-train">
+    <div class="layer-title">Training Layer</div>
+    <div class="boxes">
+      <div class="box">
+        MobileNetV2
+        <div class="box-sub">TensorFlow 2.19</div>
+      </div>
+      <div class="box">
+        Kaggle GPU P100
+        <div class="box-sub">Two-phase fine-tuning</div>
+      </div>
+      <div class="box">
+        MLflow Tracking
+        <div class="box-sub">3 experiments logged</div>
+      </div>
+      <div class="box">
+        80/10/10 Split
+        <div class="box-sub">Bias-corrected dataset</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- SERVING LAYER -->
+  <div class="layer l-serve">
+    <div class="layer-title">Serving Layer</div>
+    <div class="boxes">
+      <div class="box">
+        FastAPI
+        <div class="box-sub">REST inference API<br>Port 8000</div>
+      </div>
+      <div class="box">
+        Streamlit UI
+        <div class="box-sub">Web frontend<br>Port 8501</div>
+      </div>
+      <div class="box">
+        MLflow Server
+        <div class="box-sub">Experiment UI<br>Port 5000</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- MONITORING LAYER -->
+  <div class="layer l-monitor">
+    <div class="layer-title">Monitoring Layer</div>
+    <div class="boxes">
+      <div class="box">
+        Prometheus
+        <div class="box-sub">Metrics scraping<br>Port 9090</div>
+      </div>
+      <div class="box">
+        Grafana
+        <div class="box-sub">Live dashboard<br>Port 3000</div>
+      </div>
+      <div class="box">
+        Node Exporter
+        <div class="box-sub">Host metrics<br>Port 9100</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- INFRA LAYER -->
+  <div class="layer l-infra">
+    <div class="layer-title">Infrastructure Layer</div>
+    <div class="boxes">
+      <div class="box">
+        Docker Compose
+        <div class="box-sub">6 containers</div>
+      </div>
+      <div class="box">
+        xray-network
+        <div class="box-sub">Shared bridge network</div>
+      </div>
+      <div class="box">
+        Named Volumes
+        <div class="box-sub">Persistent storage</div>
+      </div>
+      <div class="box">
+        Health Checks
+        <div class="box-sub">Auto-restart policies</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DVC DAG -->
+<div style="max-width:900px;margin:36px auto 0;">
+  <div style="background:#F8FAFC;border:2px solid #E2E8F0;border-radius:12px;padding:20px 24px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#64748B;margin-bottom:14px;">DVC DAG — Model Versioning Pipeline</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;">
+      <div style="background:#E2E8F0;border:1px solid #CBD5E1;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;color:#334155;text-align:center;">data/processed.dvc</div>
+      <div style="color:#94A3B8;font-size:18px;">→</div>
+      <div style="background:#E2E8F0;border:1px solid #CBD5E1;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;color:#334155;text-align:center;">models/best_model.h5.dvc</div>
+      <div style="color:#94A3B8;font-size:18px;">→</div>
+      <div style="background:#E2E8F0;border:1px solid #CBD5E1;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;color:#334155;text-align:center;">models/mobilenetv2_final.h5.dvc<br><span style="font-size:10px;font-weight:400;">(v1)</span></div>
+      <div style="color:#94A3B8;font-size:18px;">→</div>
+      <div style="background:#E2E8F0;border:1px solid #CBD5E1;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;color:#334155;text-align:center;">models/mobilenetv2_v2_balanced.h5.dvc<br><span style="font-size:10px;font-weight:400;">(v2)</span></div>
+      <div style="color:#94A3B8;font-size:18px;">→</div>
+      <div style="background:#DCFCE7;border:2px solid #86EFAC;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;color:#166534;text-align:center;">models/mobilenetv2_v3_final.h5.dvc<br><span style="font-size:10px;font-weight:400;">(v3 — PRODUCTION)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#BFDBFE;"></div> Data Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#BBF7D0;"></div> Training Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FED7AA;"></div> Serving Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#E9D5FF;"></div> Monitoring Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#CBD5E1;"></div> Infrastructure Layer</div>
+</div>
+
+<div class="footer">DA5402 MLOps Project | Mohmad Yaqoob | DA25M017 | April 2026</div>
+
+</body>
+</html>
