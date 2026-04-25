@@ -20,8 +20,12 @@ import numpy as np
 from datetime import datetime
 from PIL import Image
 
-import mlflow
-import mlflow.keras
+try:
+    import mlflow
+    import mlflow.keras
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    MLFLOW_AVAILABLE = False
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -164,6 +168,9 @@ def _log_baseline_to_mlflow():
     The baseline values are logged as MLflow parameters so they appear
     in the experiment tracking UI alongside model metrics.
     """
+    if not MLFLOW_AVAILABLE:
+        logger.warning('MLflow not available — skipping baseline logging')
+        return
     try:
         mlflow.set_tracking_uri(MLFLOW_URI)
         mlflow.set_experiment("chest-xray-pneumonia-detection")
