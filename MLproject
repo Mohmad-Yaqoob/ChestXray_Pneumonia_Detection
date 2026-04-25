@@ -1,0 +1,44 @@
+name: ChestXray_Pneumonia_Detection
+
+python_env: python_env.yaml
+
+entry_points:
+
+  train:
+    parameters:
+      learning_rate: {type: float, default: 0.0001}
+      fine_tune_lr: {type: float, default: 0.00001}
+      batch_size: {type: int, default: 32}
+      phase1_epochs: {type: int, default: 15}
+      phase2_epochs: {type: int, default: 10}
+      threshold: {type: float, default: 0.65}
+      data_dir: {type: str, default: "data/processed"}
+      model_output: {type: str, default: "models/mobilenetv2_v3_final.h5"}
+    command: "python src/model/train.py
+              --learning_rate {learning_rate}
+              --fine_tune_lr {fine_tune_lr}
+              --batch_size {batch_size}
+              --phase1_epochs {phase1_epochs}
+              --phase2_epochs {phase2_epochs}
+              --threshold {threshold}
+              --data_dir {data_dir}
+              --model_output {model_output}"
+
+  evaluate:
+    parameters:
+      model_path: {type: str, default: "models/mobilenetv2_v3_final.h5"}
+      data_dir: {type: str, default: "data/processed"}
+      threshold: {type: float, default: 0.65}
+    command: "python src/model/evaluate.py
+              --model_path {model_path}
+              --data_dir {data_dir}
+              --threshold {threshold}"
+
+  serve:
+    parameters:
+      model_path: {type: str, default: "models/mobilenetv2_v3_final.h5"}
+      host: {type: str, default: "0.0.0.0"}
+      port: {type: int, default: 8000}
+    command: "uvicorn src.api.main:app
+              --host {host}
+              --port {port}"
