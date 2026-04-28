@@ -111,3 +111,21 @@ services:
     networks:
       - xray-network
     restart: unless-stopped
+  airflow:
+    image: apache/airflow:2.9.0
+    container_name: xray-airflow
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+      - AIRFLOW__WEBSERVER__SECRET_KEY=pneumoscan_secret_key
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+    ports:
+      - "8080:8080"
+    networks:
+      - xray-network
+    command: standalone
+    restart: unless-stopped
