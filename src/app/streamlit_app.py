@@ -600,32 +600,60 @@ elif page == "ML Pipeline":
         st.info("Could not fetch live metrics. Make sure the FastAPI container is running.")
 
     # External MLOps tool link cards
-    st.markdown('<div class="section-header" style="margin-top:2rem;">MLOps Tool Links</div>', unsafe_allow_html=True)
-    t1, t2, t3 = st.columns(3)
+    st.markdown('<div class="section-header" style="margin-top:2rem;">MLOps Tool Links — Click to Open</div>', unsafe_allow_html=True)
+    t1, t2, t3, t4, t5 = st.columns(5)
     with t1:
         st.markdown("""
-        <div class="pipeline-box" style="padding:1rem;">
-            <div style="font-size:1.2rem;">📈</div>
-            <div style="margin-top:6px;font-weight:600;">MLflow</div>
+        <a href="http://localhost:5000" target="_blank" style="text-decoration:none;">
+        <div class="pipeline-box" style="padding:1rem;cursor:pointer;transition:border 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e3a5f'">
+            <div style="font-size:1.4rem;">📈</div>
+            <div style="margin-top:6px;font-weight:600;color:#c4d4e8;">MLflow</div>
             <div class="pipeline-box-sub">localhost:5000</div>
-            <div style="margin-top:8px;font-size:0.75rem;color:#3b82f6;">Experiment tracking · 3 runs logged</div>
+            <div style="margin-top:8px;font-size:0.72rem;color:#3b82f6;">Experiment tracking · 3 runs</div>
         </div>
+        </a>
         """, unsafe_allow_html=True)
     with t2:
         st.markdown("""
-        <div class="pipeline-box" style="padding:1rem;">
-            <div style="font-size:1.2rem;">🔥</div>
-            <div style="margin-top:6px;font-weight:600;">Prometheus</div>
+        <a href="http://localhost:9090" target="_blank" style="text-decoration:none;">
+        <div class="pipeline-box" style="padding:1rem;cursor:pointer;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e3a5f'">
+            <div style="font-size:1.4rem;">🔥</div>
+            <div style="margin-top:6px;font-weight:600;color:#c4d4e8;">Prometheus</div>
             <div class="pipeline-box-sub">localhost:9090</div>
-            <div style="margin-top:8px;font-size:0.75rem;color:#3b82f6;">3 custom xray_* metrics</div>
+            <div style="margin-top:8px;font-size:0.72rem;color:#3b82f6;">5 custom xray_* metrics</div>
         </div>
+        </a>
         """, unsafe_allow_html=True)
     with t3:
         st.markdown("""
-        <div class="pipeline-box" style="padding:1rem;">
-            <div style="font-size:1.2rem;">📊</div>
-            <div style="margin-top:6px;font-weight:600;">Grafana</div>
+        <a href="http://localhost:3000" target="_blank" style="text-decoration:none;">
+        <div class="pipeline-box" style="padding:1rem;cursor:pointer;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e3a5f'">
+            <div style="font-size:1.4rem;">📊</div>
+            <div style="margin-top:6px;font-weight:600;color:#c4d4e8;">Grafana</div>
             <div class="pipeline-box-sub">localhost:3000</div>
-            <div style="margin-top:8px;font-size:0.75rem;color:#3b82f6;">Live dashboard · 10s refresh</div>
+            <div style="margin-top:8px;font-size:0.72rem;color:#3b82f6;">Live dashboard · 10s refresh</div>
         </div>
+        </a>
+        """, unsafe_allow_html=True)
+    with t4:
+        st.markdown("""
+        <a href="http://localhost:8080" target="_blank" style="text-decoration:none;">
+        <div class="pipeline-box" style="padding:1rem;cursor:pointer;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e3a5f'">
+            <div style="font-size:1.4rem;">🌀</div>
+            <div style="margin-top:6px;font-weight:600;color:#c4d4e8;">Airflow</div>
+            <div class="pipeline-box-sub">localhost:8080</div>
+            <div style="margin-top:8px;font-size:0.72rem;color:#3b82f6;">Pipeline management · DAG runs</div>
+        </div>
+        </a>
+        """, unsafe_allow_html=True)
+    with t5:
+        st.markdown("""
+        <a href="http://localhost:8000/docs" target="_blank" style="text-decoration:none;">
+        <div class="pipeline-box" style="padding:1rem;cursor:pointer;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e3a5f'">
+            <div style="font-size:1.4rem;">⚡</div>
+            <div style="margin-top:6px;font-weight:600;color:#c4d4e8;">FastAPI</div>
+            <div class="pipeline-box-sub">localhost:8000</div>
+            <div style="margin-top:8px;font-size:0.72rem;color:#3b82f6;">REST API docs · 6 endpoints</div>
+        </div>
+        </a>
         """, unsafe_allow_html=True)
