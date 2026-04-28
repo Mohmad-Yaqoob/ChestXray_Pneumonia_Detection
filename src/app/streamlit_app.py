@@ -604,7 +604,7 @@ elif page == "ML Pipeline":
     t1, t2, t3, t4, t5 = st.columns(5)
     with t1:
         st.markdown("""
-        <a href="http://localhost:5000" target="_blank" style="text-decoration:none;">
+        <a href="http://localhost:5001" target="_blank" style="text-decoration:none;">
         <div class="pipeline-box" style="padding:1rem;cursor:pointer;transition:border 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e3a5f'">
             <div style="font-size:1.4rem;">📈</div>
             <div style="margin-top:6px;font-weight:600;color:#c4d4e8;">MLflow</div>
